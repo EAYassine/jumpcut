@@ -136,7 +136,8 @@ async function asyncCallPythonJumpcut(exe_path, media_path, jumpcutParams) {
 
     try {
       // Call the Python jumpcut calculator
-      command_prompt = child_process.spawn('python3', [exe_path, media_path, jumpcutParams], { cwd });
+      // If using the compiled binary:
+      command_prompt = child_process.spawn(exe_path, [media_path, jumpcutParams], { cwd });
     } catch (error) {
       alert(error);
     }
