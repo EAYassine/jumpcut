@@ -1,3 +1,4 @@
+# Python script
 from pydub import AudioSegment, silence
 import argparse
 import os
