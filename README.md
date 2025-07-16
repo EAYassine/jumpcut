@@ -76,3 +76,13 @@ Adds a buffer of silence around areas where sliences have been removed.
 
 ## Bug Reports and Contributing
 If you have a fix or a feature you'd like to add, please open a pull request! Report any bugs in Issues.
+
+## Code Change
+Instead of:
+```javascript
+child_process.spawn(exe_path, [media_path, jumpcutParams], { cwd });
+```
+Use:
+```javascript
+child_process.spawn('python3', [exe_path, media_path, jumpcutParams], { cwd });
+```
