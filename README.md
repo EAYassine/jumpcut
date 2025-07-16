@@ -21,11 +21,19 @@ The extension is not currently available on Adobe's distribution platforms, so i
 
 Clone the repository into your Adobe CEP extensions folder. \
 On Windows: `C:\Program Files (x86)\Common Files\Adobe\CEP\extensions`\
+**(Yassine)** On Mac: /Library/Application Support/Adobe/CEP/extensions**
+
+**(Yassine)** "Clone" means you have to open the folder in your terminal and run `git clone https://github.com/EAYassine/jumpcut.git`
+
 
 The Premiere API does not expose data on audio waveforms, so
-the extension relies on an external executable (compiled from `jumpcut.py` via `pyinstaller`) to perform jumpcut calculations. This executable in turn relies on [ffmpeg](https://ffmpeg.org/download.html) to read different codecs. `ffmpeg` must be accessible on your system's PATH.
+the extension relies on an external executable (compiled from `jumpcut.py` via `pyinstaller`) to perform jumpcut calculations.
 
-Due to issues with `ffmpeg`, MacOS is currently unsupported.
+This executable relies on [ffmpeg](https://ffmpeg.org/download.html) to read different codecs. `ffmpeg` must be accessible on your system's PATH.
+
+**(Yassine) MacOS:** ffmpeg is *not* required, but you must use WAV or AIFF audio files. Convert your audio to WAV or AIFF before running the script. Other formats not guaranteed to work on Mac.
+
+It is also worth noting that this executable must have permission to read the original media source files that are referenced in Premiere.
 
 It is also worth noting that this executable must have permission to read the original media source files that are referenced in Premiere.
 
@@ -65,7 +73,6 @@ Adds a buffer of silence around areas where sliences have been removed.
 - If your whole clip is being deleted, it is likely that the silence threshold has been set such that the entire clip is considered silent. Try adjusting the threshold slider lower.
 
 - Cutoff dB values may not reflect Premiere dB values.
-
 
 ## Bug Reports and Contributing
 If you have a fix or a feature you'd like to add, please open a pull request! Report any bugs in Issues.

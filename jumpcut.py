@@ -13,43 +13,11 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 logging.debug("Running Python executable.")
 
-# try:
-#     # Relative paths to ffmpeg and ffprobe binaries, relative to the script's directory
-#     relative_ffmpeg_bin = '/bin/ffmpeg'
-#     relative_ffprobe_bin = '/bin/ffprobe'
-
-#     # Get the absolute path of the script's directory
-#     script_dir = os.path.dirname(os.path.abspath(__file__))
-
-#     # Combine script directory with relative paths to get absolute paths
-#     absolute_ffmpeg_bin = os.path.join(script_dir, relative_ffmpeg_bin)
-#     absolute_ffprobe_bin = os.path.join(script_dir, relative_ffprobe_bin)
-
-#     # Get the current PATH
-#     original_path = os.environ.get('PATH')
-
-#     # Add both ffmpeg and ffprobe binary paths to the PATH
-#     os.environ['PATH'] = f"{absolute_ffmpeg_bin}:{absolute_ffprobe_bin}:{original_path}"
-# except Exception as e:
-#     logging.debug(e)
-
-# def is_ffmpeg_installed():
-#     try:
-#         # Run "ffmpeg -version" command and suppress output
-#         subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-#         return True  # ffmpeg command was successful
-#     except OSError as e:
-#         logging.debug(e)
-#         return False  # ffmpeg not installed
-
-# logging.debug(is_ffmpeg_installed())
-# logging.debug(os.getcwd())
-
-# if not is_ffmpeg_installed(): # If ffmpeg is not on the PATH, check for it in the extension /bin folder
-#     if os.name == 'nt': # Windows
-#         AudioSegment.converter = "./bin/ffmpeg.exe"
-#     else:
-#         AudioSegment.converter = "./bin/ffmpeg"
+# On Mac, pydub can use the system's "avbin" or "ffmpeg" if installed, but if neither is available, it can use the built-in audio support for certain formats.
+# To avoid ffmpeg dependency, ensure you use only formats natively supported by pydub (like WAV, AIFF, etc.).
+# If you want to force pydub to use native support, do not set AudioSegment.converter.
+# If you get errors, convert your audio files to WAV or AIFF before running this script.
+# The script will now force WAV/AIFF usage on Mac to avoid ffmpeg issues.
 
 parser = argparse.ArgumentParser()
 parser.add_argument("path")
@@ -86,10 +54,18 @@ START = int(jumpcut_params['start'])
 SEEK_STEP = 50
 
 # File path and format config
-file_extension = os.path.splitext(args.path)[1].replace('.', '')
 
+# On Mac, force WAV/AIFF usage to avoid ffmpeg dependency
 FILE_PATH = args.path
-FILE_TYPE = file_extension
+file_extension = os.path.splitext(FILE_PATH)[1].replace('.', '').lower()
+if sys.platform == "darwin":
+    if file_extension not in ["wav", "aiff"]:
+        print("Error: On Mac, only WAV and AIFF files are supported. Please convert your audio file.")
+        sys.exit(1)
+    FILE_TYPE = file_extension
+    # (Yassine) On Mac, pydub will use native support for WAV/AIFF, so ffmpeg is NOT required.
+else:
+    FILE_TYPE = file_extension
 
 try:
     # Load file
@@ -141,19 +117,32 @@ for i in range(0, len(silences), 2):
 
 silences = cleaned_silences
 
-# Convert to seconds for Premiere
-silences = [[s[0]/1000 + START/1000, s[1]/1000 + START/1000] for s in silences]
+# Instead of deleting silent parts, output cut regions and mark silent regions as 'disabled'.
+# Output a list of segments: {"start": ..., "end": ..., "enabled": True/False}
+segments = []
+last_end = 0
+for s in silences:
+    # Non-silent segment before this silence
+    if s[0] > last_end:
+        segments.append({
+            "start": (last_end/1000) + (START/1000),
+            "end": (s[0]/1000) + (START/1000),
+            "enabled": True
+        })
+    # Silent segment
+    segments.append({
+        "start": (s[0]/1000) + (START/1000),
+        "end": (s[1]/1000) + (START/1000),
+        "enabled": False
+    })
+    last_end = s[1]
+# Add final non-silent segment if any
+clip_end = len(audio) + (START if START else 0)
+if last_end < clip_end:
+    segments.append({
+        "start": (last_end/1000) + (START/1000),
+        "end": (clip_end/1000),
+        "enabled": True
+    })
 
-# Add a flag at the end for the Premiere script to know whether the silences line up
-# with the beginning of the clip or not.
-# logging.debug(silences[0][0])
-# logging.debug(START/1000)
-if silences[0][0] == START/1000:
-    silences.append(1)
-else:
-    silences.append(0)
-
-# logging.debug(jumpcut_params)
-# logging.debug(silences)
-
-print(json.dumps({"silences": silences}))
+print(json.dumps({"segments": segments}))
