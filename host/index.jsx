@@ -72,12 +72,17 @@ function jumpCutActiveSequence(silences, backup) {
             if (i % 2 === startingIndex) {
                 currentTrackItem = nonEmptyTrackItems[i];
                 currentAudioTrackItem = nonEmptyAudioTrackItems[i];
-                currentTrackItem.remove(true, true);
-                currentAudioTrackItem.remove(true, true); // Not exactly sure but one of these parameters seems to be the 'ripple' parameter. True = ripple delete.
-            } 
+                // Disable the silent segments instead of removing them
+                if (currentTrackItem) {
+                    currentTrackItem.setEnabled(false);
+                }
+                if (currentAudioTrackItem) {
+                    currentAudioTrackItem.setEnabled(false);
+                }
+            }
         }
     } catch (error) {
-        alert("Remove silent track items: " + error.message);
+        alert("Disable silent track items: " + error.message);
     }
 
     // Re-link tracks
